@@ -51,7 +51,7 @@ test('cluster.name', (t) => {
     popQ.defer((done) => {
         pool.query(`
             BEGIN;
-            INSERT INTO network (id, geom, segment) VALUES (1, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "LineString", "coordinates": [ [ -66.05180561542511, 45.26869136632906 ], [ -66.05007290840149, 45.268982070325656 ] ] }'), 4326), 1);
+            INSERT INTO network (text, _text, text_tokenless, id, geom, segment) VALUES ('','','',1, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "LineString", "coordinates": [ [ -66.05180561542511, 45.26869136632906 ], [ -66.05007290840149, 45.268982070325656 ] ] }'), 4326), 1);
             COMMIT;
         `, (err, res) => {
             t.error(err);
@@ -59,7 +59,7 @@ test('cluster.name', (t) => {
         });
     });
 
-    //POPULATE ADDRESS
+    //POPULATE NEARBY ADDRESSES
     popQ.defer((done) => {
         pool.query(`
             BEGIN;
@@ -74,6 +74,7 @@ test('cluster.name', (t) => {
         });
     });
 
+    //CALL cluster.name on id 1
     popQ.defer((done) => {
         cluster.name(1, (err) => {
             t.error(err);
@@ -81,6 +82,7 @@ test('cluster.name', (t) => {
         });
     });
 
+    //TEXT FIELDS SHOULD BE SET TO MATCH NEARBY ADDRESSES
     popQ.defer((done) => {
         pool.query(`
             SELECT id, _text, text_tokenless, text, named FROM network;
@@ -93,6 +95,62 @@ test('cluster.name', (t) => {
                 text_tokenless: 'main',
                 text: 'main st',
                 named: true
+            });
+            return done();
+        });
+    });
+    
+    //RE-POPULATE NETWORK
+    popQ.defer((done) => {
+        pool.query(`
+            BEGIN;
+            DELETE FROM network WHERE true;
+            INSERT INTO network (text, _text, text_tokenless, id, geom, segment) VALUES ('','','',1, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "LineString", "coordinates": [ [ -66.05180561542511, 45.26869136632906 ], [ -66.05007290840149, 45.268982070325656 ] ] }'), 4326), 1);
+            COMMIT;
+        `, (err, res) => {
+            t.error(err);
+            return done();
+        });
+    });
+
+    
+    //POPULATE ADDRESSES THAT ARE NOT NEARBY
+    popQ.defer((done) => {
+        pool.query(`
+            BEGIN;
+            DELETE FROM address WHERE true;
+            INSERT INTO address (id, segment, text, text_tokenless, _text, number, geom) VALUES (1, 1, 'main st', 'main', 'Main Street', 10, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "Point", "coordinates": [ 0, 0 ] }'), 4326));
+            INSERT INTO address (id, segment, text, text_tokenless, _text, number, geom) VALUES (2, 1, 'main st', 'main', 'Main Street', 10, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "Point", "coordinates": [ 0, 0 ]  }'), 4326));
+            INSERT INTO address (id, segment, text, text_tokenless, _text, number, geom) VALUES (3, 1, 'main st', 'main', 'Main Street', 10, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "Point", "coordinates": [ 0, 0 ]  }'), 4326));
+            INSERT INTO address (id, segment, text, text_tokenless, _text, number, geom) VALUES (4, 1, 'main st', 'main', 'Main Street', 10, ST_SetSRID(ST_GeomFromGeoJSON('{ "type": "Point", "coordinates": [ 0, 0 ]  }'), 4326));
+            COMMIT;
+        `, (err, res) => {
+            t.error(err);
+            return done();
+        });
+    });
+
+    //CALL cluster.name ON id 1
+    popQ.defer((done) => {
+        cluster.name(1, (err) => {
+            t.error(err);
+            return done();
+        });
+    });
+
+    //NETWORK TEXT FIELDS SHOULD NOT HAVE BEEN UPDATED
+    popQ.defer((done) => {
+        pool.query(`
+            SELECT id, _text, text_tokenless, text, named FROM network;
+        `, (err, res) => {
+            t.error(err);
+
+            t.deepEquals(res.rows[0], {
+                id: 1,
+                _text: '',
+                text_tokenless: '',
+                text: '',
+                named: false
             });
             return done();
         });

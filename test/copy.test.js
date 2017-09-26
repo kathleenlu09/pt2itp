@@ -2,6 +2,7 @@ const tape = require('tape');
 const tmp = require('tmp');
 const os = require('os');
 const fs = require('fs');
+const path = require('path');
 const copy = require('../lib/copy');
 const tokenize = require('../lib/tokenize');
 
@@ -19,7 +20,7 @@ tape('copy.js output - address', (t) => {
     });
     copy.start(() => {
         if (process.env.UPDATE) {
-            fs.rename(tempFile, __dirname + '/fixtures/copy.sample-output-address.psv');
+            fs.createReadStream(tempFile).pipe(fs.createWriteStream(path.resolve(__dirname, './fixtures/copy.sample-output-address.psv')));
             t.fail('updated fixture');
         }
         else

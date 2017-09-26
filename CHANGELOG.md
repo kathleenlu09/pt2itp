@@ -10,6 +10,22 @@
 
 ## Version History
 
+### v11.24.1
+
+- :arrow_up: Update carmen & talisman to latest verisons
+
+### v11.24.0
+
+- :bug: Fix bug where the `name` module would not be run as `_text` fields were `NULL` instead of `''`
+
+### v11.23.0
+
+- :rocket: Update how `copy` CP handles writing to PSV files by using CSV Library instead of homebrew solution
+
+### v11.22.2
+
+- :bug: Fix syntax error in `test` mode
+
 ### v11.22.1
 
 - :bug: `cluster#break` could also potentially create near 0 length network segs
